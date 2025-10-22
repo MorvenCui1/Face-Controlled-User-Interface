@@ -46,17 +46,13 @@ while True:
         if (mouth_gap <= -20):
             pyautogui.click()
             pyautogui.sleep(1)
-        #print(mouth_gap)
 
-        
         # Calculating left eye blinking for bringing up and down keyboard
         left = [landmarks[145], landmarks[159]]
         for landmark in left:
             x = int(landmark.x * frame_w)
             y = int(landmark.y * frame_h)
             cv2.circle(frame, (x, y), 3, (0, 255, 255))
-        
-        #print(left[0].y - left[1].y)
 
         if (left[0].y - left[1].y) < 0.017:
             if (eye_close == False):
@@ -69,13 +65,10 @@ while True:
                 eye_close = False
         
         time = end - start
-
-        #print(time)
         
         if (time >= 2):
             pyautogui.hotkey(['ctrl', 'win', 'o'])
             pyautogui.sleep(1)
         
-            
     cv2.imshow('Face Camera', frame)
     cv2.waitKey(1)

@@ -37,12 +37,12 @@ while True:
 
         # Calculating left eye blinking for bringing up and down keyboard
         left = [landmarks[145], landmarks[159]]
-        right = [landmarks[386], landmarks[374]]
-        eyeGap = left[0].y - left[1].y
-        print(eyeGap)
+        eyeGapLeft = left[0].y - left[1].y
+        #print(eyeGapLeft)
 
-        #print(time)
-        
+        right = [landmarks[386], landmarks[374]]
+        eyeGapRight = right[0].y - right[1].y
+        print(eyeGapRight)
             
     cv2.imshow('Face Camera', frame)
     cv2.waitKey(1)

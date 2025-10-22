@@ -7,6 +7,8 @@ from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 
+import joblib
+
 #Connect to database or create it if it doesn't exist
 conn = sqlite3.connect('mouthDatabase.db')
 
@@ -30,7 +32,7 @@ with open("mouthCloseData.txt", "r") as file:
         gap, close = line.strip().split(",")
         data.append((float(gap), int(close)))
 
-#Insert all data into table
+#Insert all data into table if table is empty
 cursor.execute("SELECT COUNT(*) FROM mouthData")
 count = cursor.fetchone()[0]
 if count == 0:
@@ -82,3 +84,6 @@ prediction2 = modelMouth.predict(new_mouthgap)
 print("Mouthgap: -5")
 print("Predicted mouthclose: ", prediction2[0])
 print("Expected prediction: 0")
+
+#Save model
+joblib.dump(modelMouth, 'modelMouth.pkl')

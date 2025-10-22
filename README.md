@@ -1,6 +1,2 @@
 # Face-Controlled-User-Interface
-Takes inputs from face of the user to interact with user interface on computer. Uses MediaPipe to capture facial positions as inputs, uses PyAutoGUI to automate mouse and keyboard functions based on detected motions.
-
-Uses movement of nose to control cursor, open mouth to left click, and left eye wink to bring up and down keyboard.
-
-Note: Works optimally with python-3.8.9.
+Takes inputs from face of the user to interact with user interface on computer. Uses movement of nose to control cursor, left eye winking to left click, right eye winking to right click, and open mouth to bring up and down keyboard. Uses MediaPipe to capture facial positions as inputs, uses PyAutoGUI to automate mouse and keyboard functions based on detected motions. Stores user facial landmarks data on SQLite database for future use in training machine-learning models. Trains machine-learning models using Random Forest Algorithms with sci-kit learn to adapt to facial landmarks of each user. Stores trained machine-learning model using joblib.
