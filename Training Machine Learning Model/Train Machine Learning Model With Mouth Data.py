@@ -11,86 +11,122 @@ from sklearn.ensemble import RandomForestClassifier
 
 import joblib
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-db_path = os.path.join(base_dir, "mouthDatabase.db")
-data_path = os.path.join(base_dir, "mouthCloseData.txt")
-model_path = os.path.join(base_dir, "modelMouth.pkl")
+class MouthModel:
+    #Constructor
+    def __init__(self):
+        pass
 
-#Connect to database or create it if it doesn't exist
-conn = sqlite3.connect(db_path)
+    #Store data in SQLite database
+    def storeData(self):
+        #Path to files
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, "mouthDatabase.db")
+        data_path = os.path.join(base_dir, "mouthCloseData.txt")
 
-#Create table if table does not exist
-cursor = conn.cursor()
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS mouthData (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    mouthgap REAL NOT NULL,
-    mouthclose INTEGER NOT NULL
-)
-''')
+        #Connect to database or create it if it doesn't exist
+        conn = sqlite3.connect(db_path)
 
-#Delete all rows from table
-cursor.execute("DELETE FROM mouthData")
+        #Create table if table does not exist
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS mouthData (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            mouthgap REAL NOT NULL,
+            mouthclose INTEGER NOT NULL
+        )
+        ''')
 
-#Read data in from file to insert into table
-data = []
-with open(data_path, "r") as file:
-    for line in file:
-        gap, close = line.strip().split(",")
-        data.append((float(gap), int(close)))
+        #Delete all rows from table
+        cursor.execute("DELETE FROM mouthData")
 
-#Insert all data into table if table is empty
-cursor.execute("SELECT COUNT(*) FROM mouthData")
-count = cursor.fetchone()[0]
-if count == 0:
-    cursor.executemany('''
-        INSERT INTO mouthData (mouthgap, mouthclose)
-        values (?, ?)
-        ''', [(gap, int(close)) for gap, close in data])
+        #Read data in from file to insert into table
+        data = []
+        with open(data_path, "r") as file:
+            for line in file:
+                gap, close = line.strip().split(",")
+                data.append((float(gap), int(close)))
 
-#Insert all data from database into Pandas dataframe
-df = pd.read_sql_query("SELECT * FROM mouthData", conn)
+        #Insert all data into table if table is empty
+        cursor.execute("SELECT COUNT(*) FROM mouthData")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            cursor.executemany('''
+                INSERT INTO mouthData (mouthgap, mouthclose)
+                values (?, ?)
+                ''', [(gap, int(close)) for gap, close in data])
+        
+        conn.commit() #Commit changes to database
+        conn.close() #Closes the connection to database
+    
+    #Train machine learning model and print accuracy results
+    def trainModel(self):
+        #Path to files
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, "mouthDatabase.db")
+        model_path = os.path.join(base_dir, "modelMouth.pkl")
 
-conn.commit() #Commit changes to database
-conn.close() #Closes the connection to database
+        #Connect to database
+        conn = sqlite3.connect(db_path)
 
-X = df[['mouthgap']] #2D array-like features
-y = df['mouthclose'] #Target variable
+        #Insert all data from database into Pandas dataframe
+        df = pd.read_sql_query("SELECT * FROM mouthData", conn)
 
-#Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size = 0.1, random_state = 42
-)
+        conn.commit() #Commit changes to database
+        conn.close() #Closes the connection to database
 
-#Create random forest model with training data
-modelMouth = RandomForestClassifier(n_estimators = 100, random_state = 42)
-modelMouth.fit(X_train, y_train)
-print("Random forest model for mouth data")
+        X = df[['mouthgap']] #2D array-like features
+        y = df['mouthclose'] #Target variable
 
-#5-fold cross validation, train on 4 parts and test on 1
-scores = cross_val_score(modelMouth, X, y, cv = 5, scoring = 'accuracy')
+        #Split data into training and testing sets
+        X_train, X_test, y_train, y_test = train_test_split(
+         X, y, test_size = 0.1, random_state = 42
+        )
 
-#Print cross validation backtesting results
-print("Cross-validation accuracies: ", scores)
-print("Mean accuracy: ", scores.mean())
+        #Create random forest model with training data
+        modelMouth = RandomForestClassifier(n_estimators = 100, random_state = 42)
+        modelMouth.fit(X_train, y_train)
+        print("Random forest model for mouth data")
 
-# Predict on test set and evaluate accuracy
-y_pred = modelMouth.predict(X_test)
-print("Accuracy:", accuracy_score(y_test, y_pred))
-print("\nClassification Report:\n", classification_report(y_test, y_pred))
+        #5-fold cross validation, train on 4 parts and test on 1
+        scores = cross_val_score(modelMouth, X, y, cv = 5, scoring = 'accuracy')
 
-#Predict for new samples
-new_mouthgap = [[-24]]
-prediction1 = modelMouth.predict(new_mouthgap)
-print("Mouthgap: -24")
-print("Predicted mouthclose: ", prediction1[0])
-print("Expected prediction: 1")
+        #Print cross validation backtesting results
+        print("Cross-validation accuracies: ", scores)
+        print("Mean accuracy: ", scores.mean())
 
-new_mouthgap = [[-5]]
-prediction2 = modelMouth.predict(new_mouthgap)
-print("Mouthgap: -5")
-print("Predicted mouthclose: ", prediction2[0])
-print("Expected prediction: 0")
+        # Predict on test set and evaluate accuracy
+        y_pred = modelMouth.predict(X_test)
+        print("Accuracy:", accuracy_score(y_test, y_pred))
+        print("\nClassification Report:\n", classification_report(y_test, y_pred))
 
-#Save model
-joblib.dump(modelMouth, model_path)
+        #Save model
+        joblib.dump(modelMouth, model_path)
+    
+    #Test Model With New Cases
+    def testModel(self):
+        #Filepath
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        model_path = os.path.join(base_dir, "modelMouth.pkl")
+
+        #Load model
+        modelMouth = joblib.load(model_path)
+
+        #Predict for new samples
+        new_mouthgap = [[-24]]
+        prediction1 = modelMouth.predict(new_mouthgap)
+        print("Mouthgap: -24")
+        print("Predicted mouthclose: ", prediction1[0])
+        print("Expected prediction: 1")
+
+        new_mouthgap = [[-5]]
+        prediction2 = modelMouth.predict(new_mouthgap)
+        print("Mouthgap: -5")
+        print("Predicted mouthclose: ", prediction2[0])
+        print("Expected prediction: 0")
+
+
+#Run class
+testModel = MouthModel()
+testModel.storeData()
+testModel.trainModel()
+testModel.testModel()

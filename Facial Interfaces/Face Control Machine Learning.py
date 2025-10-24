@@ -99,7 +99,7 @@ while True:
                 eye_close_left = False
         
         timeLeft = endLeft - startLeft
-        if (timeLeft > 1):
+        if (timeLeft > 2):
             startLeft = timer()
             endLeft = timer()
             pyautogui.click()
@@ -125,7 +125,7 @@ while True:
                 eye_close_right = False
         
         timeRight = endRight - startRight
-        if (timeRight > 1):
+        if (timeRight > 2):
             startRight = timer()
             endRight = timer()
             pyautogui.rightClick()

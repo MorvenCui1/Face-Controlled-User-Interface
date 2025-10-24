@@ -11,86 +11,122 @@ from sklearn.ensemble import RandomForestClassifier
 
 import joblib
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
-db_path = os.path.join(base_dir, "eyeDatabase.db")
-data_path = os.path.join(base_dir, "eyeCloseData.txt")
-model_path = os.path.join(base_dir, "modelEye.pkl")
+class EyeModel:
+    #Constructor
+    def __init__(self):
+        pass
 
-#Connect to database or create it if it doesn't exist
-conn = sqlite3.connect(db_path)
+    #Store data in SQLite database
+    def storeData(self):
+        #Path to files
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, "eyeDatabase.db")
+        data_path = os.path.join(base_dir, "eyeCloseData.txt")
 
-#Create table if table does not exist
-cursor = conn.cursor()
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS eyeData (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    eyegap REAL NOT NULL,
-    eyeclose INTEGER NOT NULL
-)
-''')
+        #Connect to database or create it if it doesn't exist
+        conn = sqlite3.connect(db_path)
 
-#Delete all rows from table
-#cursor.execute("DELETE FROM eyeData")
+        #Create table if table does not exist
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS eyeData (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            eyegap REAL NOT NULL,
+            eyeclose INTEGER NOT NULL
+        )
+        ''')
 
-#Read data in from file to insert into table
-data = []
-with open(data_path, "r") as file:
-    for line in file:
-        gap, close = line.strip().split(",")
-        data.append((float(gap), int(close)))
+        #Delete all rows from table
+        cursor.execute("DELETE FROM eyeData")
 
-#Insert all data into table if table is empty
-cursor.execute("SELECT COUNT(*) FROM eyeData")
-count = cursor.fetchone()[0]
-if count == 0:
-    cursor.executemany('''
-        INSERT INTO eyeData (eyegap, eyeclose)
-        values (?, ?)
-        ''', [(gap, int(close)) for gap, close in data])
+        #Read data in from file to insert into table
+        data = []
+        with open(data_path, "r") as file:
+            for line in file:
+                gap, close = line.strip().split(",")
+                data.append((float(gap), int(close)))
 
-#Insert all data from database into Pandas dataframe
-df = pd.read_sql_query("SELECT * FROM eyeData", conn)
+        #Insert all data into table if table is empty
+        cursor.execute("SELECT COUNT(*) FROM eyeData")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            cursor.executemany('''
+                INSERT INTO eyeData (eyegap, eyeclose)
+                values (?, ?)
+                ''', [(gap, int(close)) for gap, close in data])
+        
+        conn.commit() #Commit changes to database
+        conn.close() #Closes the connection to database
+    
+    #Train machine learning model and print accuracy results
+    def trainModel(self):
+        #Path to files
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(base_dir, "eyeDatabase.db")
+        model_path = os.path.join(base_dir, "modelEye.pkl")
 
-conn.commit() #Commit changes to database
-conn.close() #Closes the connection to database
+        #Connect to database
+        conn = sqlite3.connect(db_path)
 
-X = df[['eyegap']] #2D array-like features
-y = df['eyeclose'] #Target variable
+        #Insert all data from database into Pandas dataframe
+        df = pd.read_sql_query("SELECT * FROM eyeData", conn)
 
-#Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size = 0.1, random_state = 42
-)
+        conn.commit() #Commit changes to database
+        conn.close() #Closes the connection to database
 
-#Create random forest model with training data
-modelEye = RandomForestClassifier(n_estimators = 100, random_state = 42)
-modelEye.fit(X_train, y_train)
-print("Random forest model for eye data")
+        X = df[['eyegap']] #2D array-like features
+        y = df['eyeclose'] #Target variable
 
-#5-fold cross validation, train on 4 parts and test on 1
-scores = cross_val_score(modelEye, X, y, cv = 5, scoring = 'accuracy')
+        #Split data into training and testing sets
+        X_train, X_test, y_train, y_test = train_test_split(
+         X, y, test_size = 0.1, random_state = 42
+        )
 
-#Print cross validation backtesting results
-print("Cross-validation accuracies: ", scores)
-print("Mean accuracy: ", scores.mean())
+        #Create random forest model with training data
+        modelEye = RandomForestClassifier(n_estimators = 100, random_state = 42)
+        modelEye.fit(X_train, y_train)
+        print("Random forest model for eye data")
 
-# Predict on test set and evaluate accuracy
-y_pred = modelEye.predict(X_test)
-print("Accuracy:", accuracy_score(y_test, y_pred))
-print("\nClassification Report:\n", classification_report(y_test, y_pred))
+        #5-fold cross validation, train on 4 parts and test on 1
+        scores = cross_val_score(modelEye, X, y, cv = 5, scoring = 'accuracy')
 
-#Predict for new samples
-new_eyegap = [[0.010]]
-prediction1 = modelEye.predict(new_eyegap)
-print("Eyegap: 0.010")
-print("Predicted eyeclose: ", prediction1[0])
-print("Expected prediction: 1")
+        #Print cross validation backtesting results
+        print("Cross-validation accuracies: ", scores)
+        print("Mean accuracy: ", scores.mean())
 
-new_eyegap = [[0.020]]
-prediction2 = modelEye.predict(new_eyegap)
-print("Eyegap: 0.020")
-print("Predicted eyeclose: ", prediction2[0])
-print("Expected prediction: 0")
+        # Predict on test set and evaluate accuracy
+        y_pred = modelEye.predict(X_test)
+        print("Accuracy:", accuracy_score(y_test, y_pred))
+        print("\nClassification Report:\n", classification_report(y_test, y_pred))
 
-#Save model
-joblib.dump(modelEye, model_path)
+        #Save model
+        joblib.dump(modelEye, model_path)
+    
+    #Test Model With New Cases
+    def testModel(self):
+        #Filepath
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        model_path = os.path.join(base_dir, "modelEye.pkl")
+
+        #Load model
+        modelEye = joblib.load(model_path)
+
+        #Predict for new samples
+        new_eyegap = [[0.010]]
+        prediction1 = modelEye.predict(new_eyegap)
+        print("Eyegap: 0.010")
+        print("Predicted eyeclose: ", prediction1[0])
+        print("Expected prediction: 1")
+
+        new_eyegap = [[0.020]]
+        prediction2 = modelEye.predict(new_eyegap)
+        print("Eyegap: 0.020")
+        print("Predicted eyeclose: ", prediction2[0])
+        print("Expected prediction: 0")
+
+
+#Run class
+testModel = EyeModel()
+testModel.storeData()
+testModel.trainModel()
+testModel.testModel()
