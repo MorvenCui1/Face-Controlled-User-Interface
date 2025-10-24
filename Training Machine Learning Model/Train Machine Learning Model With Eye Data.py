@@ -1,3 +1,5 @@
+import os
+
 import sqlite3
 
 import pandas as pd
@@ -9,8 +11,13 @@ from sklearn.ensemble import RandomForestClassifier
 
 import joblib
 
+base_dir = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(base_dir, "eyeDatabase.db")
+data_path = os.path.join(base_dir, "eyeCloseData.txt")
+model_path = os.path.join(base_dir, "modelEye.pkl")
+
 #Connect to database or create it if it doesn't exist
-conn = sqlite3.connect('eyeDatabase.db')
+conn = sqlite3.connect(db_path)
 
 #Create table if table does not exist
 cursor = conn.cursor()
@@ -27,7 +34,7 @@ CREATE TABLE IF NOT EXISTS eyeData (
 
 #Read data in from file to insert into table
 data = []
-with open("eyeCloseData.txt", "r") as file:
+with open(data_path, "r") as file:
     for line in file:
         gap, close = line.strip().split(",")
         data.append((float(gap), int(close)))
@@ -86,4 +93,4 @@ print("Predicted eyeclose: ", prediction2[0])
 print("Expected prediction: 0")
 
 #Save model
-joblib.dump(modelEye, 'modelEye.pkl')
+joblib.dump(modelEye, model_path)

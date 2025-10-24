@@ -1,3 +1,10 @@
+import os
+
+file_name = ""
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+data_path = os.path.join(base_dir, file_name)
+
 # Paste your list of numbers here as a multiline string
 raw_data_true = """
 """
@@ -19,6 +26,6 @@ numbers_false = [float(line.strip()) for line in raw_data_false.strip().splitlin
 formatted_lines_false = [f"{num}, 0" for num in numbers_false]
 
 #Write and save
-with open("eyeCloseData.txt", "w") as f:
+with open(data_path, "w") as f:
     f.write("\n".join(formatted_lines_true))
     f.write("\n".join(formatted_lines_false))

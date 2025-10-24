@@ -1,3 +1,5 @@
+import os
+
 import sqlite3
 
 import pandas as pd
@@ -9,8 +11,13 @@ from sklearn.ensemble import RandomForestClassifier
 
 import joblib
 
+base_dir = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(base_dir, "mouthDatabase.db")
+data_path = os.path.join(base_dir, "mouthCloseData.txt")
+model_path = os.path.join(base_dir, "modelMouth.pkl")
+
 #Connect to database or create it if it doesn't exist
-conn = sqlite3.connect('mouthDatabase.db')
+conn = sqlite3.connect(db_path)
 
 #Create table if table does not exist
 cursor = conn.cursor()
@@ -27,7 +34,7 @@ cursor.execute("DELETE FROM mouthData")
 
 #Read data in from file to insert into table
 data = []
-with open("mouthCloseData.txt", "r") as file:
+with open(data_path, "r") as file:
     for line in file:
         gap, close = line.strip().split(",")
         data.append((float(gap), int(close)))
@@ -86,4 +93,4 @@ print("Predicted mouthclose: ", prediction2[0])
 print("Expected prediction: 0")
 
 #Save model
-joblib.dump(modelMouth, 'modelMouth.pkl')
+joblib.dump(modelMouth, model_path)

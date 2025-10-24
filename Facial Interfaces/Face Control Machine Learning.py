@@ -5,6 +5,7 @@ import pyautogui
 
 from timeit import default_timer as timer
 
+import os
 import joblib
 
 cam = cv2.VideoCapture(0)
@@ -12,8 +13,11 @@ face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
 screen_w, screen_h = pyautogui.size()
 
 #Load machine learning models
-eyeModel = joblib.load('modelEye.pkl')
-mouthModel = joblib.load('modelMouth.pkl')
+base_dir = os.path.dirname(os.path.abspath(__file__))
+eye_model_path = os.path.join(base_dir, "modelEye.pkl")
+mouth_model_path = os.path.join(base_dir, "modelMouth.pkl")
+eyeModel = joblib.load(eye_model_path)
+mouthModel = joblib.load(mouth_model_path)
 
 #Initialize flags for left eye
 eye_close_left = False
